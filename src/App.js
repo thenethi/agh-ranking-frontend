@@ -1,4 +1,4 @@
-import RankingSystem from "./components/RankingSystem";
+import RankingSystem from "./components/RankingSystem/RankingSystem";
 import "./App.css";
 
 const App = () => <RankingSystem />;

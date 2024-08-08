@@ -1,22 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {
-  Container,
-  Title,
-  SubTitle,
-  Form,
-  Input,
-  Select,
-  Button,
-  Table,
-  Th,
-  Td,
-  Alert,
-  Link,
-  Message
-} from './StyledComponents';
+import * as XLSX from 'xlsx';
+import { Container, Title, SubTitle, Form, Input, Select, Button, Table, Th, Td, Alert, Link, Message } from './StyledComponents';
 
-const RankingSystem=()=> {
+const RankingSystem = () => {
   const [examData, setExamData] = useState([]);
   const [rankings, setRankings] = useState([]);
   const [courseTypes, setCourseTypes] = useState([]);
@@ -85,12 +72,16 @@ const RankingSystem=()=> {
       setUploadMessage("Please select a file to upload.");
       return;
     }
-
+  
     const formData = new FormData();
     formData.append("file", file);
-
+  
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/bulkupload`, formData);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/bulkupload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       setUploadMessage(`Successfully uploaded ${response.data.count} records.`);
       fetchExamData();
       fetchRankings();
@@ -98,6 +89,34 @@ const RankingSystem=()=> {
       console.error("Error:", error);
       setUploadMessage("Error uploading file. Please try again.");
     }
+  };
+  
+  const generateExcelTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([{
+      name: "",
+      date: "",
+      certification: "",
+      courseType: "",
+      status: "",
+      score: "",
+      totalScore: "",
+      sessionLink: ""
+    }], {
+      header: [
+        "name",
+        "date",
+        "certification",
+        "courseType",
+        "status",
+        "score",
+        "totalScore",
+        "sessionLink"
+      ]
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "BulkUploadTemplate.xlsx");
   };
 
   return (
@@ -177,6 +196,7 @@ const RankingSystem=()=> {
       </Form>
 
       <SubTitle>Bulk Upload</SubTitle>
+      <Button onClick={generateExcelTemplate}>Download Bulk Upload Template</Button>
       <Form onSubmit={handleBulkUpload}>
         <Input
           type="file"
