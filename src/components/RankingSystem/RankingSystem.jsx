@@ -1,22 +1,15 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useForm } from 'react-hook-form';
 import * as XLSX from 'xlsx';
+import { formFields } from '../data/formConfig';
 import { Container, Title, SubTitle, Form, Input, Select, Button, Table, Th, Td, Alert, Link, Message } from './StyledComponents';
 
 const RankingSystem = () => {
+  const { register, handleSubmit, reset } = useForm();
   const [examData, setExamData] = useState([]);
   const [rankings, setRankings] = useState([]);
   const [courseTypes, setCourseTypes] = useState([]);
-  const [newExam, setNewExam] = useState({
-    name: "",
-    date: "",
-    certification: "",
-    courseType: "",
-    status: "",
-    score: "",
-    totalScore: "",
-    sessionLink: "",
-  });
   const [file, setFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
 
@@ -39,27 +32,17 @@ const RankingSystem = () => {
   const fetchCourseTypes = async () => {
     const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/coursetypes`);
     setCourseTypes(response.data);
+    const courseTypeField = formFields.find(field => field.name === 'courseType');
+    if (courseTypeField) {
+      courseTypeField.options = response.data.map(type => ({ value: type, label: type }));
+    }
   };
 
-  const handleInputChange = (e) => {
-    setNewExam({ ...newExam, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    await axios.post(`${process.env.REACT_APP_API_URL}/api/examdata`, newExam);
+  const onSubmit = async (data) => {
+    await axios.post(`${process.env.REACT_APP_API_URL}/api/examdata`, data);
     fetchExamData();
     fetchRankings();
-    setNewExam({
-      name: "",
-      date: "",
-      certification: "",
-      courseType: "",
-      status: "",
-      score: "",
-      totalScore: "",
-      sessionLink: "",
-    });
+    reset(); // Resets the form after successful submission
   };
 
   const handleFileChange = (e) => {
@@ -72,10 +55,10 @@ const RankingSystem = () => {
       setUploadMessage("Please select a file to upload.");
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("file", file);
-  
+
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/bulkupload`, formData, {
         headers: {
@@ -90,29 +73,12 @@ const RankingSystem = () => {
       setUploadMessage("Error uploading file. Please try again.");
     }
   };
-  
+
   const generateExcelTemplate = () => {
-    const ws = XLSX.utils.json_to_sheet([{
-      name: "",
-      date: "",
-      certification: "",
-      courseType: "",
-      status: "",
-      score: "",
-      totalScore: "",
-      sessionLink: ""
-    }], {
-      header: [
-        "name",
-        "date",
-        "certification",
-        "courseType",
-        "status",
-        "score",
-        "totalScore",
-        "sessionLink"
-      ]
-    });
+    const ws = XLSX.utils.json_to_sheet([formFields.reduce((acc, field) => {
+      acc[field.name] = "";
+      return acc;
+    }, {})]);
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
@@ -124,74 +90,25 @@ const RankingSystem = () => {
       <Title>Skill Ranking System</Title>
 
       <SubTitle>Add New Exam Data</SubTitle>
-      <Form onSubmit={handleSubmit}>
-        <Input
-          name="name"
-          value={newExam.name}
-          onChange={handleInputChange}
-          placeholder="Name"
-          required
-        />
-        <Input
-          name="date"
-          type="date"
-          value={newExam.date}
-          onChange={handleInputChange}
-          required
-        />
-        <Input
-          name="certification"
-          value={newExam.certification}
-          onChange={handleInputChange}
-          placeholder="Certification"
-          required
-        />
-        <Select
-          name="courseType"
-          value={newExam.courseType}
-          onChange={handleInputChange}
-          required
-        >
-          <option value="">Select Course Level</option>
-          {courseTypes.map((type, index) => (
-            <option key={index} value={type}>
-              {type}
-            </option>
-          ))}
-        </Select>
-        <Select
-          name="status"
-          value={newExam.status}
-          onChange={handleInputChange}
-          required
-        >
-          <option value="">Select Status</option>
-          <option value="Passed">Passed</option>
-          <option value="Failed">Failed</option>
-        </Select>
-        <Input
-          name="score"
-          type="number"
-          value={newExam.score}
-          onChange={handleInputChange}
-          placeholder="Score"
-          required
-        />
-        <Input
-          name="totalScore"
-          type="number"
-          value={newExam.totalScore}
-          onChange={handleInputChange}
-          placeholder="Total Score"
-          required
-        />
-        <Input
-          name="sessionLink"
-          value={newExam.sessionLink}
-          onChange={handleInputChange}
-          placeholder="Session Link"
-          required
-        />
+      <Form onSubmit={handleSubmit(onSubmit)}>
+        {formFields.map((field, index) => (
+          field.type === "select" ? (
+            <Select key={index} {...register(field.name)} required={field.required}>
+              <option value="">{field.placeholder}</option>
+              {field.options.map((option, idx) => (
+                <option key={idx} value={option.value}>{option.label}</option>
+              ))}
+            </Select>
+          ) : (
+            <Input
+              key={index}
+              type={field.type}
+              {...register(field.name)}
+              placeholder={field.placeholder}
+              required={field.required}
+            />
+          )
+        ))}
         <Button type="submit">Add Exam Data</Button>
       </Form>
 

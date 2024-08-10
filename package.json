@@ -10,7 +10,9 @@
     "bootstrap": "^5.3.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hook-form": "^7.52.2",
     "react-scripts": "5.0.1",
+    "sonar-scanner": "^3.1.0",
     "styled-components": "^6.1.12",
     "web-vitals": "^2.1.4",
     "xlsx": "^0.18.5"
@@ -19,7 +21,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "sonar": "sonar-scanner"
   },
   "eslintConfig": {
     "extends": [
